@@ -1,0 +1,36 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      LIBRARIE_PORT: "8080"
+      LIBRARIE_DATABASE_URL: "${LIBRARIE_DATABASE_URL:-postgres://postgres:postgres@host.docker.internal:5432/librarie?sslmode=disable}"
+      LIBRARIE_SESSION_SECRET: "${LIBRARIE_SESSION_SECRET}"
+      LIBRARIE_ENCRYPTION_KEY: "${LIBRARIE_ENCRYPTION_KEY}"
+      LIBRARIE_ADMIN_USERS: "${LIBRARIE_ADMIN_USERS:-}"
+      LIBRARIE_STORAGE_PATH: "/app/data/uploads"
+    volumes:
+      - uploads:/app/data/uploads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  uploads:

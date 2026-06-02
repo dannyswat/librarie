@@ -1,0 +1,24 @@
+# Binaries
+bin/
+tmp/
+
+# Environment
+.env
+
+# Go
+*.test
+*.out
+
+# Frontend
+web/node_modules/
+web/dist/
+
+# Storage uploads (local dev)
+data/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/

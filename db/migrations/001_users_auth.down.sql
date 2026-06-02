@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS login_rate_limits;
+DROP TABLE IF EXISTS login_attempts;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS passkeys;
+DROP TABLE IF EXISTS users;

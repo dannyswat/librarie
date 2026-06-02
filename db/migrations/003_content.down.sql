@@ -1,0 +1,8 @@
+DROP TABLE IF EXISTS blocks;
+DROP TABLE IF EXISTS pages;
+DROP TABLE IF EXISTS content_topics;
+DROP TABLE IF EXISTS contents;
+DROP TABLE IF EXISTS subject_topics;
+DROP TABLE IF EXISTS topics;
+DROP TABLE IF EXISTS teachers_subjects;
+DROP TABLE IF EXISTS subjects;
