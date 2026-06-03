@@ -6,6 +6,12 @@ export interface User {
   created_at: string
 }
 
+export interface AuthResponse {
+  user: User
+  access_token: string
+  refresh_token: string
+}
+
 export interface LoginRequest {
   username: string
   password: string
@@ -25,5 +31,11 @@ export interface CreateInvitationResponse {
 
 export interface AcceptInvitationRequest {
   username: string
+  password: string
+}
+
+export interface RegisterAdminRequest {
+  username: string
+  email: string
   password: string
 }

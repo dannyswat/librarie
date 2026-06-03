@@ -247,6 +247,15 @@ func (q *Queries) DeleteSubject(ctx context.Context, id pgtype.UUID) error {
 	return err
 }
 
+const deleteTeacherSubjectAssignments = `-- name: DeleteTeacherSubjectAssignments :exec
+DELETE FROM teachers_subjects WHERE teacher_id = $1
+`
+
+func (q *Queries) DeleteTeacherSubjectAssignments(ctx context.Context, teacherID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteTeacherSubjectAssignments, teacherID)
+	return err
+}
+
 const deleteTopic = `-- name: DeleteTopic :exec
 DELETE FROM topics WHERE id = $1
 `

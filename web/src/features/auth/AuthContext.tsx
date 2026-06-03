@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { clearAuthTokens, setAuthTokens } from '@/api/client'
 import { authApi } from './api'
 import type { User } from './types'
 
@@ -16,8 +17,8 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  login: (username: string, password: string) => Promise<void>
-  passkeyLogin: () => Promise<void>
+  login: (username: string, password: string) => Promise<User>
+  passkeyLogin: () => Promise<User>
   logout: () => Promise<void>
   /** Call after successful registration to refresh auth state */
   refresh: () => Promise<void>
@@ -33,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const user = await authApi.me()
       setState({ user, loading: false })
     } catch {
+      clearAuthTokens()
       setState({ user: null, loading: false })
     }
   }, [])
@@ -44,19 +46,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (username: string, password: string) => {
-      await authApi.login({ username, password })
-      await refresh()
+      const auth = await authApi.login({ username, password })
+      setAuthTokens(auth.access_token, auth.refresh_token)
+      setState({ user: auth.user, loading: false })
+      return auth.user
     },
-    [refresh],
+    [],
   )
 
   const passkeyLogin = useCallback(async () => {
-    await authApi.passkeyLogin()
-    await refresh()
-  }, [refresh])
+    const auth = await authApi.passkeyLogin()
+    setAuthTokens(auth.access_token, auth.refresh_token)
+    setState({ user: auth.user, loading: false })
+    return auth.user
+  }, [])
 
   const logout = useCallback(async () => {
     await authApi.logout()
+    clearAuthTokens()
     setState({ user: null, loading: false })
   }, [])
 

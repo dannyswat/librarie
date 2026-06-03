@@ -19,6 +19,11 @@ SELECT * FROM ai_provider_configs WHERE id = $1;
 SELECT * FROM ai_provider_configs
 ORDER BY provider_key ASC, capability ASC;
 
+-- name: ListAIProviderConfigsByProvider :many
+SELECT * FROM ai_provider_configs
+WHERE provider_key = $1
+ORDER BY capability ASC;
+
 -- name: ListEnabledAIProviderConfigs :many
 SELECT * FROM ai_provider_configs
 WHERE is_enabled = TRUE

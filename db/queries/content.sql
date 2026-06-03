@@ -30,6 +30,9 @@ ON CONFLICT (teacher_id, subject_id) DO NOTHING;
 -- name: UnassignTeacherFromSubject :exec
 DELETE FROM teachers_subjects WHERE teacher_id = $1 AND subject_id = $2;
 
+-- name: DeleteTeacherSubjectAssignments :exec
+DELETE FROM teachers_subjects WHERE teacher_id = $1;
+
 -- name: ListSubjectsByTeacher :many
 SELECT s.* FROM subjects s
 JOIN teachers_subjects ts ON ts.subject_id = s.id

@@ -26,8 +26,13 @@ func RegisterRoutes(g *echo.Group, q *db.Queries, cfg *config.Config) error {
 
 	auth := g.Group("/auth")
 
+	// First-run admin setup — disabled once an admin exists
+	auth.GET("/setup", SetupStatusHandler(q))
+	auth.POST("/setup", RegisterAdminHandler(q), rl.IPRateLimitMiddleware())
+
 	// Public endpoints (rate-limited)
 	auth.POST("/login", LoginHandler(q), rl.LoginRateLimitMiddleware())
+	auth.POST("/refresh", RefreshHandler(q), rl.IPRateLimitMiddleware())
 	auth.POST("/passkey/authenticate/begin", pk.AuthenticateBegin, rl.IPRateLimitMiddleware())
 	auth.POST("/passkey/authenticate/complete", pk.AuthenticateComplete, rl.IPRateLimitMiddleware())
 

@@ -18,8 +18,8 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
     try {
-      await login(username, password)
-      navigate('/', { replace: true })
+      const user = await login(username, password)
+      navigate(user.role === 'admin' ? '/admin/teachers' : '/', { replace: true })
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Login failed')
     } finally {
@@ -31,8 +31,8 @@ export default function LoginPage() {
     setError(null)
     setPasskeyLoading(true)
     try {
-      await passkeyLogin()
-      navigate('/', { replace: true })
+      const user = await passkeyLogin()
+      navigate(user.role === 'admin' ? '/admin/teachers' : '/', { replace: true })
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Passkey authentication failed')
     } finally {

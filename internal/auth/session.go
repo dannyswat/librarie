@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -64,4 +65,20 @@ func GetSessionToken(c echo.Context) (string, error) {
 		return "", err
 	}
 	return cookie.Value, nil
+}
+
+// GetBearerToken returns the token from Authorization: Bearer <token>.
+func GetBearerToken(c echo.Context) (string, bool) {
+	authz := strings.TrimSpace(c.Request().Header.Get("Authorization"))
+	if authz == "" {
+		return "", false
+	}
+	if !strings.HasPrefix(strings.ToLower(authz), "bearer ") {
+		return "", false
+	}
+	token := strings.TrimSpace(authz[7:])
+	if token == "" {
+		return "", false
+	}
+	return token, true
 }

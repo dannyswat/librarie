@@ -5,11 +5,9 @@ import (
 	"encoding/base64"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
 
 	"librarie/internal/db"
@@ -190,22 +188,24 @@ func (h *PasskeyHandlers) AuthenticateComplete(c echo.Context) error {
 		}
 	}
 
-	// Create session.
-	token, err := GenerateToken()
+	accessToken, err := createSessionToken(ctx, h.q, lookedUpUser.User.ID)
 	if err != nil {
-		slog.Error("passkey auth complete: token generation failed", "error", err)
+		slog.Error("passkey auth complete: access token creation failed", "error", err)
 		return echo.ErrInternalServerError
 	}
-
-	expiresAt := pgtype.Timestamptz{Time: time.Now().Add(SessionDuration), Valid: true}
-	if _, err := h.q.CreateSession(ctx, lookedUpUser.User.ID, HashToken(token), expiresAt); err != nil {
-		slog.Error("passkey auth complete: session creation failed", "error", err)
+	refreshToken, err := createSessionToken(ctx, h.q, lookedUpUser.User.ID)
+	if err != nil {
+		slog.Error("passkey auth complete: refresh token creation failed", "error", err)
 		return echo.ErrInternalServerError
 	}
 
 	clearChallengeCookie(c)
-	SetSessionCookie(c, token)
-	return c.JSON(http.StatusOK, toUserResponse(lookedUpUser.User))
+	SetSessionCookie(c, accessToken)
+	return c.JSON(http.StatusOK, authResponse{
+		User:         toUserResponse(lookedUpUser.User),
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	})
 }
 
 // ── Cookie helpers ────────────────────────────────────────────────────────────

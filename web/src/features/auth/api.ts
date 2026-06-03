@@ -7,15 +7,27 @@ import {
 import { api } from '@/api/client'
 import type {
   AcceptInvitationRequest,
+  AuthResponse,
   CreateInvitationRequest,
   CreateInvitationResponse,
   LoginRequest,
+  RegisterAdminRequest,
   User,
 } from './types'
 
 export const authApi = {
+  /** Check if first-run admin setup is needed */
+  setupStatus: () => api.get<{ needs_setup: boolean }>('/auth/setup'),
+
+  /** Register the first admin user (only works when no admin exists) */
+  registerAdmin: (req: RegisterAdminRequest) => api.post<User>('/auth/setup', req),
+
   /** Password login */
-  login: (req: LoginRequest) => api.post<User>('/auth/login', req),
+  login: (req: LoginRequest) => api.post<AuthResponse>('/auth/login', req),
+
+  /** Rotate tokens using refresh token */
+  refresh: (refreshToken: string) =>
+    api.post<AuthResponse>('/auth/refresh', { refresh_token: refreshToken }),
 
   /** Logout */
   logout: () => api.post<void>('/auth/logout'),
@@ -32,12 +44,12 @@ export const authApi = {
     api.post<User>(`/invitations/${encodeURIComponent(token)}/accept`, req),
 
   /** Begin passkey authentication and complete the flow */
-  passkeyLogin: async (): Promise<User> => {
+  passkeyLogin: async (): Promise<AuthResponse> => {
     const options = await api.post<PublicKeyCredentialRequestOptionsJSON>(
       '/auth/passkey/authenticate/begin',
     )
     const response = await startAuthentication({ optionsJSON: options })
-    return api.post<User>('/auth/passkey/authenticate/complete', response)
+    return api.post<AuthResponse>('/auth/passkey/authenticate/complete', response)
   },
 
   /** Register a new passkey for the currently authenticated user */

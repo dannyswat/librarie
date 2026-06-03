@@ -92,6 +92,40 @@ func (q *Queries) ListAIProviderConfigs(ctx context.Context) ([]AiProviderConfig
 	return items, nil
 }
 
+const listAIProviderConfigsByProvider = `-- name: ListAIProviderConfigsByProvider :many
+SELECT id, provider_key, capability, encrypted_credentials, model, is_enabled, updated_at FROM ai_provider_configs
+WHERE provider_key = $1
+ORDER BY capability ASC
+`
+
+func (q *Queries) ListAIProviderConfigsByProvider(ctx context.Context, providerKey string) ([]AiProviderConfig, error) {
+	rows, err := q.db.Query(ctx, listAIProviderConfigsByProvider, providerKey)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AiProviderConfig{}
+	for rows.Next() {
+		var i AiProviderConfig
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProviderKey,
+			&i.Capability,
+			&i.EncryptedCredentials,
+			&i.Model,
+			&i.IsEnabled,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listEnabledAIProviderConfigs = `-- name: ListEnabledAIProviderConfigs :many
 SELECT id, provider_key, capability, encrypted_credentials, model, is_enabled, updated_at FROM ai_provider_configs
 WHERE is_enabled = TRUE

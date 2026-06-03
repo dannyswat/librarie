@@ -22,9 +22,13 @@ const (
 func SessionMiddleware(q *db.Queries) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			token, err := GetSessionToken(c)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusUnauthorized, "authentication required")
+			token, ok := GetBearerToken(c)
+			if !ok {
+				cookieToken, err := GetSessionToken(c)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusUnauthorized, "authentication required")
+				}
+				token = cookieToken
 			}
 
 			tokenHash := HashToken(token)

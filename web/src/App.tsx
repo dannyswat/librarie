@@ -1,8 +1,11 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext'
 import LoginPage from '@/features/auth/LoginPage'
 import InvitePage from '@/features/auth/InvitePage'
+import SetupPage from '@/features/auth/SetupPage'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import TeachersAdminPage from '@/features/admin/TeachersAdminPage'
+import AIProvidersAdminPage from '@/features/admin/AIProvidersAdminPage'
 
 function HomePage() {
   const { user, logout } = useAuth()
@@ -10,6 +13,12 @@ function HomePage() {
     <main style={{ fontFamily: 'sans-serif', padding: '2rem' }}>
       <h1>Librarie</h1>
       <p>Welcome, <strong>{user?.username}</strong> ({user?.role})</p>
+      {user?.role === 'admin' && (
+        <nav style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
+          <Link to="/admin/teachers">Manage Teachers</Link>
+          <Link to="/admin/ai-providers">AI Providers</Link>
+        </nav>
+      )}
       <button onClick={logout}>Sign out</button>
     </main>
   )
@@ -31,12 +40,29 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route path="/setup" element={<SetupPage />} />
       <Route path="/invite/:token" element={<InvitePage />} />
       <Route
         path="/"
         element={
           <ProtectedRoute>
             <HomePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/teachers"
+        element={
+          <ProtectedRoute requireRole="admin">
+            <TeachersAdminPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/ai-providers"
+        element={
+          <ProtectedRoute requireRole="admin">
+            <AIProvidersAdminPage />
           </ProtectedRoute>
         }
       />

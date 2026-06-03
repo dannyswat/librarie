@@ -398,6 +398,39 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 	return items, nil
 }
 
+const listUsersByRole = `-- name: ListUsersByRole :many
+SELECT id, username, email, password_hash, role, created_at FROM users
+WHERE role = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListUsersByRole(ctx context.Context, role string) ([]User, error) {
+	rows, err := q.db.Query(ctx, listUsersByRole, role)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []User{}
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.Email,
+			&i.PasswordHash,
+			&i.Role,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updatePasskeySignCount = `-- name: UpdatePasskeySignCount :one
 UPDATE passkeys SET sign_count = $2 WHERE id = $1 RETURNING id, user_id, credential_id, public_key, sign_count, created_at
 `

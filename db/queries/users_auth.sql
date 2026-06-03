@@ -12,6 +12,11 @@ SELECT * FROM users WHERE email = $1;
 -- name: ListUsers :many
 SELECT * FROM users ORDER BY created_at DESC;
 
+-- name: ListUsersByRole :many
+SELECT * FROM users
+WHERE role = $1
+ORDER BY created_at DESC;
+
 -- name: CreateUser :one
 INSERT INTO users (username, email, password_hash, role)
 VALUES ($1, $2, $3, $4)

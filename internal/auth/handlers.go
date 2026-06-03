@@ -38,6 +38,30 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
+type refreshRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+type authResponse struct {
+	User         userResponse `json:"user"`
+	AccessToken  string       `json:"access_token"`
+	RefreshToken string       `json:"refresh_token"`
+}
+
+func createSessionToken(ctx context.Context, q *db.Queries, userID pgtype.UUID) (string, error) {
+	token, err := GenerateToken()
+	if err != nil {
+		return "", err
+	}
+
+	expiresAt := pgtype.Timestamptz{Time: time.Now().Add(SessionDuration), Valid: true}
+	if _, err := q.CreateSession(ctx, userID, HashToken(token), expiresAt); err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
+
 // LoginHandler handles POST /api/v1/auth/login.
 func LoginHandler(q *db.Queries) echo.HandlerFunc {
 	return func(c echo.Context) error {
@@ -67,25 +91,24 @@ func LoginHandler(q *db.Queries) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
 		}
 
-		// Create session.
-		token, err := GenerateToken()
+		accessToken, err := createSessionToken(ctx, q, user.ID)
 		if err != nil {
-			slog.Error("login: token generation failed", "error", err)
+			slog.Error("login: access token creation failed", "error", err)
 			return echo.ErrInternalServerError
 		}
-
-		expiresAt := pgtype.Timestamptz{}
-		expiresAt.Time = time.Now().Add(SessionDuration)
-		expiresAt.Valid = true
-
-		if _, err := q.CreateSession(ctx, user.ID, HashToken(token), expiresAt); err != nil {
-			slog.Error("login: session creation failed", "error", err)
+		refreshToken, err := createSessionToken(ctx, q, user.ID)
+		if err != nil {
+			slog.Error("login: refresh token creation failed", "error", err)
 			return echo.ErrInternalServerError
 		}
 
 		_ = recordLoginAttempt(ctx, q, req.Username, c.RealIP(), req.Password, true)
-		SetSessionCookie(c, token)
-		return c.JSON(http.StatusOK, toUserResponse(user))
+		SetSessionCookie(c, accessToken)
+		return c.JSON(http.StatusOK, authResponse{
+			User:         toUserResponse(user),
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+		})
 	}
 }
 
@@ -110,6 +133,62 @@ func MeHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		user := UserFromContext(c)
 		return c.JSON(http.StatusOK, toUserResponse(user))
+	}
+}
+
+// RefreshHandler handles POST /api/v1/auth/refresh.
+func RefreshHandler(q *db.Queries) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var req refreshRequest
+		if err := c.Bind(&req); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+		}
+		if req.RefreshToken == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "refresh_token is required")
+		}
+
+		ctx := c.Request().Context()
+		session, err := q.GetSessionByTokenHash(ctx, HashToken(req.RefreshToken))
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				return echo.NewHTTPError(http.StatusUnauthorized, "invalid refresh token")
+			}
+			slog.Error("refresh: session lookup failed", "error", err)
+			return echo.ErrInternalServerError
+		}
+
+		if time.Now().After(session.ExpiresAt.Time) {
+			_ = q.DeleteSession(ctx, session.ID)
+			return echo.NewHTTPError(http.StatusUnauthorized, "refresh token expired")
+		}
+
+		user, err := q.GetUserByID(ctx, session.UserID)
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				return echo.NewHTTPError(http.StatusUnauthorized, "user not found")
+			}
+			slog.Error("refresh: user lookup failed", "error", err)
+			return echo.ErrInternalServerError
+		}
+
+		accessToken, err := createSessionToken(ctx, q, user.ID)
+		if err != nil {
+			slog.Error("refresh: access token creation failed", "error", err)
+			return echo.ErrInternalServerError
+		}
+		newRefreshToken, err := createSessionToken(ctx, q, user.ID)
+		if err != nil {
+			slog.Error("refresh: refresh token creation failed", "error", err)
+			return echo.ErrInternalServerError
+		}
+
+		_ = q.DeleteSession(ctx, session.ID)
+		SetSessionCookie(c, accessToken)
+		return c.JSON(http.StatusOK, authResponse{
+			User:         toUserResponse(user),
+			AccessToken:  accessToken,
+			RefreshToken: newRefreshToken,
+		})
 	}
 }
 

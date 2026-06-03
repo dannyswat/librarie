@@ -17,6 +17,7 @@ import (
 	"librarie/internal/auth"
 	"librarie/internal/config"
 	"librarie/internal/db"
+	"librarie/internal/user"
 )
 
 func main() {
@@ -45,9 +46,6 @@ func main() {
 	slog.Info("database connected")
 
 	queries := db.New(pool)
-
-	// Admin bootstrap
-	auth.BootstrapAdmins(ctx, queries, cfg)
 
 	e := echo.New()
 	e.HideBanner = true
@@ -93,6 +91,10 @@ func main() {
 	api := e.Group("/api/v1")
 	if err := auth.RegisterRoutes(api, queries, cfg); err != nil {
 		slog.Error("failed to register auth routes", "error", err)
+		os.Exit(1)
+	}
+	if err := user.RegisterAdminRoutes(api, queries, cfg); err != nil {
+		slog.Error("failed to register admin routes", "error", err)
 		os.Exit(1)
 	}
 

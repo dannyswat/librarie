@@ -60,6 +60,7 @@ type Querier interface {
 	DeleteQuestion(ctx context.Context, id pgtype.UUID) error
 	DeleteSession(ctx context.Context, id pgtype.UUID) error
 	DeleteSubject(ctx context.Context, id pgtype.UUID) error
+	DeleteTeacherSubjectAssignments(ctx context.Context, teacherID pgtype.UUID) error
 	DeleteTopic(ctx context.Context, id pgtype.UUID) error
 	DeleteUser(ctx context.Context, id pgtype.UUID) error
 	GetAIProviderConfig(ctx context.Context, providerKey string, capability string) (AiProviderConfig, error)
@@ -82,6 +83,7 @@ type Querier interface {
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	ListAIProviderConfigs(ctx context.Context) ([]AiProviderConfig, error)
+	ListAIProviderConfigsByProvider(ctx context.Context, providerKey string) ([]AiProviderConfig, error)
 	ListAssessmentsBySubject(ctx context.Context, subjectID pgtype.UUID) ([]Assessment, error)
 	ListBlocksByPage(ctx context.Context, pageID pgtype.UUID) ([]Block, error)
 	ListContentsBySubject(ctx context.Context, subjectID pgtype.UUID) ([]Content, error)
@@ -104,6 +106,7 @@ type Querier interface {
 	ListTopicsByQuestion(ctx context.Context, questionID pgtype.UUID) ([]Topic, error)
 	ListTopicsBySubject(ctx context.Context, subjectID pgtype.UUID) ([]Topic, error)
 	ListUsers(ctx context.Context) ([]User, error)
+	ListUsersByRole(ctx context.Context, role string) ([]User, error)
 	RemoveQuestionFromAssessment(ctx context.Context, assessmentID pgtype.UUID, questionID pgtype.UUID) error
 	RemoveTopicFromAssessment(ctx context.Context, assessmentID pgtype.UUID, topicID pgtype.UUID) error
 	RemoveTopicFromContent(ctx context.Context, contentID pgtype.UUID, topicID pgtype.UUID) error
