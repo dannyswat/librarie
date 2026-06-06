@@ -6,6 +6,7 @@ import SetupPage from '@/features/auth/SetupPage'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import TeachersAdminPage from '@/features/admin/TeachersAdminPage'
 import AIProvidersAdminPage from '@/features/admin/AIProvidersAdminPage'
+import ContentPage from '@/features/content/ContentPage'
 
 function HomePage() {
   const { user, logout } = useAuth()
@@ -13,6 +14,9 @@ function HomePage() {
     <main style={{ fontFamily: 'sans-serif', padding: '2rem' }}>
       <h1>Librarie</h1>
       <p>Welcome, <strong>{user?.username}</strong> ({user?.role})</p>
+      {(user?.role === 'teacher' || user?.role === 'admin') && (
+        <Link to="/content">Content</Link>
+      )}
       {user?.role === 'admin' && (
         <nav style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
           <Link to="/admin/teachers">Manage Teachers</Link>
@@ -63,6 +67,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requireRole="admin">
             <AIProvidersAdminPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/content"
+        element={
+          <ProtectedRoute requireRole="teacher">
+            <ContentPage />
           </ProtectedRoute>
         }
       />

@@ -16,7 +16,9 @@ import (
 
 	"librarie/internal/auth"
 	"librarie/internal/config"
+	"librarie/internal/content"
 	"librarie/internal/db"
+	"librarie/internal/storage"
 	"librarie/internal/user"
 )
 
@@ -97,6 +99,13 @@ func main() {
 		slog.Error("failed to register admin routes", "error", err)
 		os.Exit(1)
 	}
+
+	store, err := storage.NewLocalStorage(cfg.StorageBasePath)
+	if err != nil {
+		slog.Error("failed to initialise storage", "error", err)
+		os.Exit(1)
+	}
+	content.RegisterRoutes(e, api, queries, store)
 
 	// Server
 	addr := ":" + cfg.Port
